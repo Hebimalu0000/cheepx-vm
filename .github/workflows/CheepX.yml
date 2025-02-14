@@ -42,9 +42,8 @@ jobs:
       - name: Deploy📦️ mode (make package)
         if: ${{ github.event.inputs.flag == 'true' }}
         run: |
-          podman unshare mkfs.ext2 -b 4096 -d rootfs/ build/images.ext2 600M
-          cd build
-          split -b 95M images.ext2 images.part_
+          podman unshare mkfs.ext2 -b 4096 -d rootfs/ images.ext2 600M
+          split -b 50M images.ext2 build/images.part_
 
       - name: Deploy📦️ mode (push pages)
         if: ${{ github.event.inputs.flag == 'true' }}
