@@ -24,5 +24,7 @@ jobs:
 
       - name: Run a multi-line script
         run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+          buildah build -f Dockerfile --platform linux/i386 -t Dockerfile
+          podman create --name cheerpxcontainer Dockerfile
+          mkdir rootfs
+          podman unshare podman cp cheerpxcontainer:/ rootfs/
