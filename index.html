@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" style="height: 100%;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
+    <title>CheerpX Test</title>
+    <script src="https://cxrtnc.leaningtech.com/1.0.8/cx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="script.js"></script>
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body style="height: 100%; background: black;">
+    
+    <div class="container">
+      <div class="gearbox">
+      <div class="overlay"></div>
+        <div class="gear one">
+          <div class="gear-inner">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+        <div class="gear two">
+          <div class="gear-inner">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+        <div class="gear three">
+          <div class="gear-inner">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+        <div class="gear four large">
+          <div class="gear-inner">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+      </div>
+      <h1>Loading...</h1>
+    </div>
+    
+    <pre id="console" style="height: 100%;"></pre>
+    <script type="module">
+      async function fetchAndAssembleFiles() {
+        const partFiles = ["images.part_aa", "images.part_ab", "images.part_ac", "images.part_ad", "images.part_ae", "images.part_af", "images.part_ag"]; // 追加する
+        const chunks = [];
+
+        for (const file of partFiles) {
+          console.log(`Fetching ${file}...`);
+          const response = await fetch(file);
+          const arrayBuffer = await response.arrayBuffer();
+          chunks.push(new Uint8Array(arrayBuffer));
+        }
+
+        console.log("Merging files...");
+        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+        const mergedArray = new Uint8Array(totalSize);
+
+        let offset = 0;
+        for (const chunk of chunks) {
+          mergedArray.set(chunk, offset);
+          offset += chunk.length;
+        }
+
+        return mergedArray;
+      }
+
+      (async () => {
+        console.log("Loading disk image...");
+        const imageData = await fetchAndAssembleFiles();
+        console.log("Disk image loaded.");
+
+        var blockDevice = await CheerpX.HttpBytesDevice.create(imageData.buffer);
+        var overlayDevice = await CheerpX.OverlayDevice.create(
+          blockDevice,
+          await CheerpX.IDBDevice.create("block1")
+        );
+
+        const cx = await CheerpX.Linux.create({
+          mounts: [{ type: "ext2", path: "/", dev: overlayDevice }],
+        });
+
+        cx.setConsole(document.getElementById("console"));
+
+        await cx.run("/bin/bash", ["--login"], {
+          env: [
+            "HOME=/home/user",
+            "USER=user",
+            "SHELL=/bin/bash",
+            "EDITOR=vim",
+            "LANG=en_US.UTF-8",
+            "LC_ALL=C",
+          ],
+          cwd: "/home/user",
+          uid: 1000,
+          gid: 1000,
+        });
+      })();
+    </script>
+  </body>
+</html>
