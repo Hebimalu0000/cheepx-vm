@@ -12,7 +12,7 @@
   </head>
   <body style="height: 100%; background: black;">
     
-    <div class="container">
+    <!--<div class="container">
       <div class="gearbox">
       <div class="overlay"></div>
         <div class="gear one">
@@ -48,41 +48,26 @@
         </div>
       </div>
       <h1>Loading...</h1>
-    </div>
+    </div>-->
     
     <pre id="console" style="height: 100%;"></pre>
     <script type="module">
-      async function fetchAndAssembleFiles() {
-        const partFiles = ["images.part_aa", "images.part_ab", "images.part_ac", "images.part_ad", "images.part_ae", "images.part_af", "images.part_ag"]; // 追加する
-        const chunks = [];
+      async function loadAndDecompress() {
+        // `.xz` 圧縮されたファイルを取得
+        const response = await fetch("images.ext2.xz");
+        const compressedData = new Uint8Array(await response.arrayBuffer());
 
-        for (const file of partFiles) {
-          console.log(`Fetching ${file}...`);
-          const response = await fetch(file);
-          const arrayBuffer = await response.arrayBuffer();
-          chunks.push(new Uint8Array(arrayBuffer));
-        }
+        // `CheerpX.Lzma.decompress` を使用して解凍
+        const decompressedData = await CheerpX.Lzma.decompress(compressedData);
 
-        console.log("Merging files...");
-        const totalSize = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
-        const mergedArray = new Uint8Array(totalSize);
-
-        let offset = 0;
-        for (const chunk of chunks) {
-          mergedArray.set(chunk, offset);
-          offset += chunk.length;
-        }
-
-        return mergedArray;
+        // 解凍データを `CheerpX.MemoryDevice` に保存
+        return await CheerpX.MemoryDevice.create(decompressedData);
       }
 
-      (async () => {
-        console.log("Loading disk image...");
-        const imageData = await fetchAndAssembleFiles();
-        console.log("Disk image loaded.");
+      async function runCheerpX() {
+        const blockDevice = await loadAndDecompress(); // 修正
 
-        var blockDevice = await CheerpX.HttpBytesDevice.create(imageData.buffer);
-        var overlayDevice = await CheerpX.OverlayDevice.create(
+        const overlayDevice = await CheerpX.OverlayDevice.create(
           blockDevice,
           await CheerpX.IDBDevice.create("block1")
         );
@@ -106,7 +91,9 @@
           uid: 1000,
           gid: 1000,
         });
-      })();
+      }
+
+      runCheerpX();
     </script>
   </body>
 </html>
