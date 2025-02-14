@@ -24,7 +24,7 @@ jobs:
 
       - name: Run a multi-line script
         run: |
-          buildah build -f Dockerfile --platform linux/i386 -t Dockerfile
-          podman create --name cheerpxcontainer Dockerfile
+          buildah build -f Dockerfile --platform linux/i386 -t cheerpximage
+          podman create --name cheerpxcontainer cheerpximage
           mkdir rootfs
           podman unshare podman cp cheerpxcontainer:/ rootfs/
