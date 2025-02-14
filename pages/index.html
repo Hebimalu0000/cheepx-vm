@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" style="height: 100%;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Cross-Origin-Opener-Policy" content="same-origin">
+    <meta http-equiv="Cross-Origin-Embedder-Policy" content="require-corp">
+    <title>CheerpX Test</title>
+    <script src="https://cxrtnc.leaningtech.com/1.0.8/cx.js"></script>
+  </head>
+  <body style="height: 100%; background: black;">
+    <pre id="console" style="height: 100%;"></pre>
+    <script type="module">
+      var blockDevice = await CheerpX.HttpBytesDevice.create("./images.ext2");
+      var overlayDevice = await CheerpX.OverlayDevice.create(
+        blockDevice,
+        await CheerpX.IDBDevice.create("block1")
+      );
+      
+      const cx = await CheerpX.Linux.create({
+        mounts: [{ type: "ext2", path: "/", dev: overlayDevice }],
+      });
+      
+      cx.setConsole(document.getElementById("console"));
+      
+      await cx.run("/bin/bash", ["--login"], {
+        env: [
+          "HOME=/home/user",
+          "USER=user",
+          "SHELL=/bin/bash",
+          "EDITOR=vim",
+          "LANG=en_US.UTF-8",
+          "LC_ALL=C",
+        ],
+        cwd: "/home/user",
+        uid: 1000,
+        gid: 1000,
+      });
+    </script>
+  </body>
+</html>
