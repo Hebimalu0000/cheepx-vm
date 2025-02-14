@@ -1,4 +1,4 @@
-name: CheepX - OS maker
+name: CheerpX - OS maker
 
 on:
   workflow_dispatch:
@@ -13,26 +13,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Setup⌛️
+        uses: actions/checkout@v4
 
-      - name: Run a one-line script
-        run: echo Hello, world!
-
-      - name: 条件付きステップ
-        if: ${{ github.event.inputs.flag == 'true' }}
-        run: echo "True"
-
-      - name: Run a multi-line script
+      - name: Make✨️ mode (docker build)
+        if: ${{ github.event.inputs.flag == 'false' }}
         run: |
           buildah build -f Dockerfile --platform linux/i386 -t cheerpximage
           podman create --name cheerpxcontainer cheerpximage
-          mkdir rootfs
+          mkdir -p rootfs
           podman unshare podman cp cheerpxcontainer:/ rootfs/
 
-      - name: Commit and push changes
+      - name: Make✨️ mode (git push)
+        if: ${{ github.event.inputs.flag == 'false' }}
         run: |
           sudo git config user.name auto-push
           sudo git config user.email auto-push@example.com
           sudo git add .
           sudo git commit -m "auto push from ci" || echo no commits
           sudo git push
+
+      - name: Deploy📦️ mode (copy file)
+        if: ${{ github.event.inputs.flag == 'true' }}
+        run: |
+          mkdir -p build
+          cp -pR pages/* build
+
+      - name: Deploy📦️ mode (make package)
+        if: ${{ github.event.inputs.flag == 'true' }}
+        run: podman unshare mkfs.ext2 -b 4096 -d rootfs/ build/images.ext2 600M
+
+      - name: Deploy📦️ mode (push pages)
+        if: ${{ github.event.inputs.flag == 'true' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build
+          keep_files: true
+          user_name: github-actions
+          user_email: github-actions@github.com
